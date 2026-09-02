@@ -1,11 +1,11 @@
 const reglas = [
     // Validar campos vacíos
     {
-        chequeo: (datos) => datos.nombre?.trim() !== '',
+        chequeo: (datos) => /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(datos.nombre),
         mensaje: "El nombre es requerido."
     },
     {
-        chequeo: (datos) => datos.apellidos?.trim() !== '',
+        chequeo: (datos) => /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(datos.apellido),
         mensaje: "Los apellidos son requeridos."
     },
     {
@@ -49,7 +49,7 @@ const reglas = [
     },
     // Validar edad
     {
-        chequeo: (datos) => datos.edad >= 18,
+        chequeo: (datos) => datos.edad >= 18 && edad <= 100,
         mensaje: "Debes ser mayor de 18 años para registrarte."
     }
 ];
