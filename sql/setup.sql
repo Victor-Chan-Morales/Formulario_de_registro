@@ -4,7 +4,7 @@ CREATE TABLE public.perfiles (
     correo TEXT NOT NULL,
     nombre TEXT NOT NULL,
     apellidos TEXT NOT NULL,
-    edad INTEGER NOT NULL
+    edad INTEGER NOT NULL CHECK (edad >= 18 AND edad <= 100)
 );
 
 -- Habilitar Row Level Security (RLS) por seguridad
@@ -16,6 +16,13 @@ CREATE POLICY "Usuarios pueden leer su propio perfil" ON public.perfiles
 CREATE OR REPLACE FUNCTION public.crear_perfil_usuario()
 RETURNS TRIGGER AS $$
 BEGIN
+    IF NEW.raw_user_meta_data->>'nombre' !~ '^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$' THEN
+        RAISE EXCEPTION 'El nombre sólo puede contener letras y espacios';
+    END IF;
+
+    IF NEW.raw_user_meta_data->>'apellidos' !~ '^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$' THEN
+        RAISE EXCEPTION 'Los apellidos sólo pueden contener letras y espacios';
+    END IF;
     INSERT INTO public.perfiles (id, correo, nombre, apellidos, edad)
     VALUES (
         NEW.id,
