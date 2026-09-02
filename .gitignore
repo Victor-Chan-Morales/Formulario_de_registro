@@ -3,10 +3,10 @@
 .env.example
 .env.local
 .env*.local
+!.env.example
 
 # Dependencias
 node_modules/
-package-lock.json
 yarn.lock
 
 # Archivos de configuración de IDE
