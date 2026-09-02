@@ -63,10 +63,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 4. Resultado
         if (resultado.exito) {
-            mostrarMensaje('✅ ¡Registro exitoso! Revisa tu bandeja de correo para confirmar tu cuenta.', 'success');
+            mostrarMensaje('✅ ¡Registro exitoso! Enviando correo de demostración...', 'success');
+            
+            // Llamar al servicio de email (DEMO RESEND)
+            const { EmailService } = await import('./emailService.js');
+            await EmailService.enviarCorreoDemo();
+
+            mostrarMensaje('✅ ¡Registro y correo de prueba enviados con éxito!', 'success');
             form.reset();
             setTimeout(() => {
                 mensajeEl.textContent = '';
+                mensajeEl.className = 'mensaje';
             }, 5000);
         } else {
             mostrarMensaje(`❌ Error: ${resultado.error}`, 'error');
