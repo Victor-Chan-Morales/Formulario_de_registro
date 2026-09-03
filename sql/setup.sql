@@ -1,41 +1,27 @@
--- 1. Crear la tabla pública para almacenar los datos del usuario
-CREATE TABLE public.perfiles (
-    id UUID REFERENCES auth.users(id) PRIMARY KEY,
-    correo TEXT NOT NULL,
-    nombre TEXT NOT NULL,
-    apellidos TEXT NOT NULL,
-    edad INTEGER NOT NULL CHECK (edad >= 18 AND edad <= 100)
+-- =============================================================
+-- setup.sql — Esquema PostgreSQL (sin Supabase)
+-- Ejecuta este script una vez en tu base de datos de Railway
+-- =============================================================
+
+-- Extensión para generar UUIDs automáticamente
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- Tabla principal de usuarios
+CREATE TABLE IF NOT EXISTS usuarios (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre          TEXT NOT NULL CHECK (nombre ~ '^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$'),
+    apellidos       TEXT NOT NULL CHECK (apellidos ~ '^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$'),
+    edad            INTEGER NOT NULL CHECK (edad >= 18 AND edad <= 100),
+    correo          TEXT NOT NULL UNIQUE,
+    password_hash   TEXT NOT NULL,
+    -- Token único que se envía por correo para verificar la cuenta
+    token_verificacion  TEXT UNIQUE,
+    verificado      BOOLEAN NOT NULL DEFAULT FALSE,
+    creado_en       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Habilitar Row Level Security (RLS) por seguridad
-ALTER TABLE public.perfiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Usuarios pueden leer su propio perfil" ON public.perfiles
-    FOR SELECT USING (auth.uid() = id);
+-- Índice para búsqueda rápida por correo (login futuro)
+CREATE INDEX IF NOT EXISTS idx_usuarios_correo ON usuarios(correo);
 
--- 2. Crear la función del Trigger
-CREATE OR REPLACE FUNCTION public.crear_perfil_usuario()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.raw_user_meta_data->>'nombre' !~ '^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$' THEN
-        RAISE EXCEPTION 'El nombre sólo puede contener letras y espacios';
-    END IF;
-
-    IF NEW.raw_user_meta_data->>'apellidos' !~ '^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$' THEN
-        RAISE EXCEPTION 'Los apellidos sólo pueden contener letras y espacios';
-    END IF;
-    INSERT INTO public.perfiles (id, correo, nombre, apellidos, edad)
-    VALUES (
-        NEW.id,
-        NEW.email,
-        NEW.raw_user_meta_data->>'nombre',
-        NEW.raw_user_meta_data->>'apellidos',
-        CAST(NEW.raw_user_meta_data->>'edad' AS INTEGER)
-    );
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 3. Crear el Trigger que escucha el registro en auth.users
-CREATE TRIGGER despues_registro_usuario
-    AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION public.crear_perfil_usuario();
+-- Índice para búsqueda rápida por token (verificación de correo)
+CREATE INDEX IF NOT EXISTS idx_usuarios_token ON usuarios(token_verificacion);
